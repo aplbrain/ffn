@@ -174,8 +174,8 @@ class PolicyPeaks(BaseSeedPolicy):
     with PolicyPeaks._sem:
       logging.info('peaks: filtering done')
       dt = edt.edt(
-          1 - filt_edges,
-          anisotropy=self.canvas.voxel_size_zyx).astype(np.float32)
+          1 - filt_edges).astype(np.float32)
+      # anisotropy=self.canvas.voxel_size_zyx
       logging.info('peaks: edt done')
 
       dt[mask] = -1

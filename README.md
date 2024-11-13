@@ -110,9 +110,9 @@ We provide two examples of how to run inference with a trained FFN model.
 For a non-interactive setting, you can use the `run_inference.py` script:
 
 ```shell
-  python run_inference.py \
-    --inference_request="$(cat configs/inference_training_sample2.pbtxt)" \
-    --bounding_box 'start { x:0 y:0 z:0 } size { x:250 y:250 z:250 }'
+python run_inference.py \
+  --inference_request="$(cat configs/inference_training_sample2.pbtxt)" \
+  --bounding_box 'start { x:0 y:0 z:0 } size { x:250 y:250 z:250 }'
 ```
 
 which will segment the `training_sample2` volume and save the results in

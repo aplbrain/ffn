@@ -52,7 +52,7 @@ _LOG_DEVICE_PLACEMENT = flags.DEFINE_boolean(
 Tuple3i = tuple[int, int, int]
 
 # pylint:enable=invalid-name
-
+tf.compat.v1.disable_eager_execution()
 
 class Runner:
   """Helper for managing FFN inference runs.
@@ -477,9 +477,11 @@ class Runner:
     # Save probability map separately. This has to happen after the
     # segmentation is saved, as `save_subvolume` will create any necessary
     # directories.
-    prob = unalign_image(canvas.seg_prob)
-    with storage.atomic_file(prob_path) as fd:
-      np.savez_compressed(fd, qprob=prob)
+
+    #TODO: NOT WORKING
+    # prob = unalign_image(canvas.seg_prob)
+    # with storage.atomic_file(prob_path) as fd:
+    #   np.savez_compressed(fd, qprob=prob)
 
   def run(self, corner: Tuple3i, subvol_size: Tuple3i, reset_counters=True):
     """Runs FFN inference over a subvolume.
@@ -515,9 +517,12 @@ class Runner:
 
     assert alignment is not None
 
+    print("CPOINT PATH!!!")
+    print(cpoint_path)
     if gfile.exists(cpoint_path):
       partial_segment_iters = canvas.restore_checkpoint(cpoint_path)
-
+      print("DEFINING PARTIAL SEGMENTS")
+      print(partial_segment_iters)
     if self.request.alignment_options.save_raw:
       image_path = storage.subvolume_path(
           self.request.segmentation_output_dir, corner, 'align'
@@ -530,7 +535,7 @@ class Runner:
     self.canvases[corner] = canvas
     canvas.segment_all(
         seed_policy=self.get_seed_policy(corner, subvol_size),
-        partial_segment_iters=partial_segment_iters,
+        #partial_segment_iters=partial_segment_iters,
     )
     self.save_segmentation(canvas, alignment, seg_path, prob_path)
     del self.canvases[corner]
