@@ -74,6 +74,10 @@ class BaseSeedPolicy:
     """
     if self.coords is None:
       self.init_coords()
+
+      if self.coords is None:
+        raise StopIteration()
+
       if self.coords.size:
         margin = np.array(self.canvas.margin)[np.newaxis, ...]
         # Do early filtering of clearly invalid locations (too close to image
@@ -171,6 +175,9 @@ class PolicyPeaks(BaseSeedPolicy):
       if self.canvas.restrictor.seed_mask is not None:
         filt_edges[self.canvas.restrictor.seed_mask] = 1
 
+    if np.all(filt_edges == 1):
+      return
+
     with PolicyPeaks._sem:
       logging.info('peaks: filtering done')
       dt = edt.edt(
@@ -179,6 +186,8 @@ class PolicyPeaks(BaseSeedPolicy):
       logging.info('peaks: edt done')
 
       dt[mask] = -1
+      dt[~np.isfinite(dt)] = -1
+
       idxs = _find_peaks(dt, min_distance=3, threshold_abs=0, threshold_rel=0)
 
       # After skimage upgrade to 0.13.0 peak_local_max returns peaks in
@@ -307,11 +316,39 @@ class PolicyMax(BaseSeedPolicy):
 class PolicyMaxPeaks(BaseSeedPolicy):
   """Local peaks of intensity."""
 
+  def __init__(
+      self, canvas, min_distance=3, threshold_abs=0, threshold_rel=0, **kwargs
+  ):
+    """Initialize settings.
+
+    Args:
+      canvas: inference Canvas object.
+      min_distance: forwarded to peak_local_max.
+      threshold_abs: forwarded to peak_local_max.
+      threshold_rel: forwarded to peak_local_max.
+      **kwargs: forwarded to base.
+    """
+    super().__init__(canvas, **kwargs)
+    logging.info(
+        'max peaks: min_distance=%s, threshold_abs=%s, threshold_rel=%s',
+        min_distance,
+        threshold_abs,
+        threshold_rel,
+    )
+    self.min_distance = min_distance
+    self.threshold_abs = threshold_abs
+    self.threshold_rel = threshold_rel
+
   def init_coords(self):
     img = self.canvas.image.astype(np.float32).copy()
     mask = self.get_exclusion_mask()
     img[mask] = 0
-    idxs = _find_peaks(img, min_distance=3, threshold_abs=0, threshold_rel=0)
+    idxs = _find_peaks(
+        img,
+        min_distance=self.min_distance,
+        threshold_abs=self.threshold_abs,
+        threshold_rel=self.threshold_rel,
+    )
     self.coords = np.array(sorted((z, y, x) for z, y, x in idxs))
 
 

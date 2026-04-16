@@ -148,15 +148,15 @@ class Base:
       else:
         l.equivalences.clear()
         for a in self.todo[self.index : self.index + self.batch]:
-          a = [aa[layer] for aa in a]
+          a = [aa[layer] for aa in a]  # pytype: disable=unsupported-operands
           l.equivalences.union(*a)
 
   def update_points(
       self, state: neuroglancer.viewer_state.ViewerState, points: PointList
   ):
-    if self.points is None:
+    if self.points is None:  # pytype: disable=attribute-error
       return
-    l = state.layers[self.point_layer]
+    l = state.layers[self.point_layer]  # pytype: disable=attribute-error
     l.annotations = [
         neuroglancer.PointAnnotation(id=repr(xyz), point=xyz) for xyz in points
     ]
@@ -200,11 +200,11 @@ class Base:
 
   def list_points(self, index: int | None = None) -> PointList:
     """Returns the list of points to display."""
-    if self.points is None:
+    if self.points is None:  # pytype: disable=attribute-error
       return []
     index = self.index if index is None else index
     return list(
-        itertools.chain(*[x for x in self.points[index : index + self.batch]])
+        itertools.chain(*[x for x in self.points[index : index + self.batch]])  # pytype: disable=attribute-error
     )
 
   def custom_msg(self):
@@ -465,6 +465,7 @@ class GraphUpdater(Base):
     self.viewer.actions.add('next-batch', lambda s: self.next_batch())
     self.viewer.actions.add('prev-batch', lambda s: self.prev_batch())
     self.viewer.actions.add('isolate', lambda s: self.isolate())
+    self.viewer.actions.add('toggle-equiv', lambda s: self.toggle_equiv())
 
     with self.viewer.config_state.txn() as s:
       s.input_event_bindings.viewer['keyj'] = 'next-batch'
@@ -478,6 +479,7 @@ class GraphUpdater(Base):
       s.input_event_bindings.data_view['shift+mousedown0'] = 'add-split'
       s.input_event_bindings.viewer['keyv'] = 'mark-bad'
       s.input_event_bindings.viewer['keyi'] = 'isolate'
+      s.input_event_bindings.viewer['keyt'] = 'toggle-equiv'
 
     with self.viewer.txn() as s:
       s.layers['split'] = neuroglancer.SegmentationLayer(
