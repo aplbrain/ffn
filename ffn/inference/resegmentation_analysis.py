@@ -210,8 +210,8 @@ def evaluate_pair_resegmentation(filename, seg_volume,
 
   # In case of multiple segmentation attempts, the last recorded start
   # point is the one we care about.
-  origin_a = np.array(start_points[0][-1], dtype=np.int) + corner
-  origin_b = np.array(start_points[1][-1], dtype=np.int) + corner
+  origin_a = np.array(start_points[0][-1], dtype=np.int64) + corner
+  origin_b = np.array(start_points[1][-1], dtype=np.int64) + corner
   oa = result.eval.from_a.origin
   oa.x, oa.y, oa.z = origin_a
   ob = result.eval.from_b.origin
