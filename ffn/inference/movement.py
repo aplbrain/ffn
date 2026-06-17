@@ -78,7 +78,8 @@ def get_scored_move_offsets(
       # Move exactly by the delta along the current axis, and select the face
       # of the subvolume orthogonal to the current axis.
       face_sel = subvol_sel[:]
-      face_sel[axis] = axis_offset + center[axis]
+      # face_sel[axis] = axis_offset + center[axis]
+      face_sel[axis] = max(axis_offset + center[axis] - 1, 0)
       face_prob = prob_map[tuple(face_sel)]
       shape = face_prob.shape
 
