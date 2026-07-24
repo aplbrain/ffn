@@ -36,7 +36,6 @@ from ffn.training import model as ffn_model
 # Necessary so that optimizer flags are defined.
 from ffn.training import optimizer  # pylint: disable=unused-import
 from ffn.training import tracker
-from ffn.training import volume_utils
 from ffn.training.import_util import import_symbol
 import h5py
 import numpy as np
@@ -44,7 +43,6 @@ from scipy import special
 import tensorflow.compat.v1 as tf
 from tensorflow.io import gfile
 
-tf.disable_v2_behavior()
 
 FLAGS = flags.FLAGS
 
@@ -72,14 +70,6 @@ flags.DEFINE_string('model_name', None,
 flags.DEFINE_string('model_args', None,
                     'JSON string with arguments to be passed to the model '
                     'constructor.')
-flags.DEFINE_list(
-    'input_volume_axes',
-    None,
-    'Optional permutation exposing 3-D image and label HDF5 datasets in a '
-    'different axis order. Coordinates are permuted consistently. Use '
-    '2,1,0 to train in canonical ZYX array order from Karlupia XYZ arrays '
-    'without rewriting volumes, partitions, or coordinate TFRecords.',
-)
 
 # Training infra options.
 flags.DEFINE_string('train_dir', '/tmp',
@@ -209,46 +199,25 @@ def _get_permutable_axes():
   return [int(x) + 1 for x in FLAGS.permutable_axes]
 
 
-def _get_input_volume_axes():
-  if not FLAGS.input_volume_axes:
-    return None
-
-  axes = tuple(int(x) for x in FLAGS.input_volume_axes)
-  if sorted(axes) != [0, 1, 2]:
-    raise ValueError(
-        '--input_volume_axes must be a permutation of 0,1,2; '
-        f'got {FLAGS.input_volume_axes!r}.'
-    )
-  return axes
-
-
 def define_data_input(model, queue_batch=None):
   """Adds TF ops to load input data."""
-
-  volume_axes = _get_input_volume_axes()
-
-  def _open_volume(path, dataset):
-    volume = h5py.File(path)[dataset]
-    if volume_axes is not None:
-      volume = volume_utils.TransposedNumpyLike(volume, volume_axes)
-    return volume
 
   label_volume_map = {}
   for vol in FLAGS.label_volumes.split(','):
     volname, path, dataset = vol.split(':')
-    label_volume_map[volname] = _open_volume(path, dataset)
+    label_volume_map[volname] = h5py.File(path)[dataset]
 
   image_volume_map = {}
   for vol in FLAGS.data_volumes.split(','):
     volname, path, dataset = vol.split(':')
-    image_volume_map[volname] = _open_volume(path, dataset)
+    image_volume_map[volname] = h5py.File(path)[dataset]
 
   if queue_batch is None:
     queue_batch = FLAGS.batch_size
 
   # Fetch sizes of images and labels
-  label_size = train_labels_size(model.info)
-  image_size = train_image_size(model.info)
+  label_size = train_labels_size(model)
+  image_size = train_image_size(model)
 
   label_radii = (label_size // 2).tolist()
   label_size = label_size.tolist()
@@ -258,12 +227,6 @@ def define_data_input(model, queue_batch=None):
   # Fetch a single coordinate and volume name from a queue reading the
   # coordinate files or from saved hard/important examples
   coord, volname = inputs.load_patch_coordinates(FLAGS.train_coords)
-  if volume_axes is not None:
-    # Coordinates use XYZ order while array axes use ZYX order.  Convert an
-    # output-array -> source-array permutation into the corresponding
-    # output-XYZ -> source-XYZ permutation.
-    coordinate_axes = volume_utils.xyz_coordinate_axes(volume_axes)
-    coord = tf.gather(coord, coordinate_axes, axis=1)
 
   # Load object labels (segmentation).
   labels = inputs.load_from_numpylike(

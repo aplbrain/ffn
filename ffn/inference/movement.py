@@ -78,7 +78,13 @@ def get_scored_move_offsets(
       # Move exactly by the delta along the current axis, and select the face
       # of the subvolume orthogonal to the current axis.
       face_sel = subvol_sel[:]
-      face_sel[axis] = axis_offset + center[axis]
+      # Even-sized FOVs can put the positive face one voxel beyond the array.
+      # Clip only when necessary so odd and larger FOVs remain symmetric.
+      face_sel[axis] = int(
+          np.clip(
+              axis_offset + center[axis], 0, prob_map.shape[axis] - 1
+          )
+      )
       face_prob = prob_map[tuple(face_sel)]
       shape = face_prob.shape
 

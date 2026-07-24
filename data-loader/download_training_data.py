@@ -6,14 +6,14 @@ import os
 # ---------------------- Configuration ----------------------
 
 # Replace these with your actual S3 paths
-IMAGE_PRECOMP_PATH = 's3://cvdb-bossdb-boss/rivlin2025/ONrOTO2/em_rechunked/'
+IMAGE_PRECOMP_PATH = 's3://mambo-datalake/connects49a/vsvi2precomputed/inttest'
 LABEL_PRECOMP_PATH = 'https://rhoana.rc.fas.harvard.edu/ng/neha_1mm_roi1_seg0419'
 
 # Desired bounding box in XYZ
-CROP_SIZE_XYZ = [512, 512, 512]  # in voxels
+CROP_SIZE_XYZ = [1536, 1536, 94]  # in voxels
 
 # Define the start of your bounding box (e.g., (0, 0, 0) or custom offset)
-BBOX_START_XYZ = [7470//2, 7470//2, 9286//2]
+BBOX_START_XYZ = [54561//2, 22691//2, 0]
 
 # Output HDF5 paths
 OUTPUT_IMAGE_H5 = 'image_volume.h5'
@@ -42,10 +42,10 @@ def load_cloudvolume_data(path, bbox_start_xyz, crop_size_xyz, mip=0):
 
 # Load data
 print("Downloading image data...")
-image_data = load_cloudvolume_data(IMAGE_PRECOMP_PATH, BBOX_START_XYZ, CROP_SIZE_XYZ, mip=0)
+image_data = load_cloudvolume_data(IMAGE_PRECOMP_PATH, BBOX_START_XYZ, CROP_SIZE_XYZ, mip=1)
 
-# print("Downloading label data...")
-# label_data = load_cloudvolume_data(LABEL_PRECOMP_PATH, BBOX_START_XYZ, CROP_SIZE_XYZ, mip=0)
+print("Downloading label data...")
+label_data = load_cloudvolume_data(LABEL_PRECOMP_PATH, BBOX_START_XYZ, CROP_SIZE_XYZ, mip=0)
 
 # ---------------------- Compute Stats ----------------------
 
@@ -74,4 +74,4 @@ def save_h5(data, filepath, dataset_name):
 
 # Save image and label volumes
 save_h5(image_data, OUTPUT_IMAGE_H5, H5_IMAGE_DATASET)
-#save_h5(label_data, OUTPUT_LABEL_H5, H5_LABEL_DATASET)
+save_h5(label_data, OUTPUT_LABEL_H5, H5_LABEL_DATASET)
